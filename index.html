@@ -128,9 +128,6 @@
   audio.loop = true;
   audio.autoplay = true;
 
-  // initial settings
-  audio.volume = parseFloat(vol.value);
-  audio.muted = false;
 
   // UI updater
   function updateUI(playing){
@@ -148,9 +145,6 @@
     }
   }
 
-  // Try to autoplay on load (best-effort). Many browsers block audible autoplay;
-  // we attempt audible play, and if blocked, attempt a muted play and add a one-time
-  // resume on first user interaction to unmute/play audibly.
   
 
   // restore play state if user previously chose to play
