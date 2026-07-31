@@ -3,189 +3,174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>For My Beautiful Girl 🌸</title>
+<title>For My Beautiful Girl ❤️</title>
 
 <style>
-
-html,body{
+*{
     margin:0;
-    width:100%;
-    height:100%;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    height:100vh;
     overflow:hidden;
-    background:linear-gradient(#b8e8ff,#ffe8f5);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(to bottom,#cceeff,#fff0f7);
     font-family:Georgia,serif;
 }
 
-canvas{
-    display:block;
-}
-
-.message{
-    position:absolute;
-    top:40px;
-    width:100%;
+.container{
     text-align:center;
+}
+
+h1{
     color:#d63384;
-    text-shadow:0 0 10px white;
+    font-size:2rem;
 }
 
-.message h1{
-    margin:0;
-    font-size:clamp(2rem,5vw,3.5rem);
+p{
+    color:#8a3d62;
+    margin:15px 0 35px;
 }
 
-.message p{
-    margin-top:10px;
-    font-size:clamp(1rem,2.5vw,1.4rem);
+svg{
+    width:320px;
+    max-width:90vw;
+}
+
+.flower{
+    transform-origin:center;
+    animation:bloom .8s ease forwards;
+    transform:scale(0);
+}
+
+.f1{animation-delay:.2s;}
+.f2{animation-delay:.5s;}
+.f3{animation-delay:.8s;}
+.f4{animation-delay:1.1s;}
+.f5{animation-delay:1.4s;}
+
+.stem{
+    stroke:#4CAF50;
+    stroke-width:5;
+    stroke-linecap:round;
+}
+
+.ribbon{
+    fill:#ff5c93;
+}
+
+@keyframes bloom{
+
+0%{
+transform:scale(0);
+}
+
+80%{
+transform:scale(1.15);
+}
+
+100%{
+transform:scale(1);
+}
+
 }
 
 </style>
 </head>
-
 <body>
 
-<div class="message">
-<h1>🌸 Happy National Girlfriend's Day 🌸</h1>
-<p>For the most beautiful flower in my life ❤️</p>
+<div class="container">
+
+<h1>Happy National Girlfriend's Day ❤️</h1>
+
+<p>For the most beautiful flower in my life.</p>
+
+<svg viewBox="0 0 300 420">
+
+<!-- stems -->
+
+<line class="stem" x1="150" y1="360" x2="150" y2="120"/>
+<line class="stem" x1="115" y1="360" x2="115" y2="170"/>
+<line class="stem" x1="185" y1="360" x2="185" y2="170"/>
+<line class="stem" x1="90" y1="360" x2="90" y2="220"/>
+<line class="stem" x1="210" y1="360" x2="210" y2="220"/>
+
+<!-- center flower -->
+
+<g class="flower f1">
+
+<circle cx="150" cy="100" r="13" fill="#ffd84d"/>
+
+<ellipse cx="150" cy="75" rx="10" ry="24" fill="#ff6fa8"/>
+<ellipse cx="150" cy="75" rx="10" ry="24" fill="#ff6fa8" transform="rotate(72 150 100)"/>
+<ellipse cx="150" cy="75" rx="10" ry="24" fill="#ff6fa8" transform="rotate(144 150 100)"/>
+<ellipse cx="150" cy="75" rx="10" ry="24" fill="#ff6fa8" transform="rotate(216 150 100)"/>
+<ellipse cx="150" cy="75" rx="10" ry="24" fill="#ff6fa8" transform="rotate(288 150 100)"/>
+
+</g>
+
+<!-- left flower -->
+
+<g class="flower f2">
+
+<circle cx="115" cy="155" r="11" fill="#ffe066"/>
+
+<circle cx="115" cy="138" r="8" fill="#ffffff"/>
+<circle cx="129" cy="150" r="8" fill="#ffffff"/>
+<circle cx="101" cy="150" r="8" fill="#ffffff"/>
+<circle cx="108" cy="166" r="8" fill="#ffffff"/>
+<circle cx="122" cy="166" r="8" fill="#ffffff"/>
+
+</g>
+
+<!-- right flower -->
+
+<g class="flower f3">
+
+<circle cx="185" cy="155" r="11" fill="#ffd84d"/>
+
+<ellipse cx="185" cy="135" rx="9" ry="18" fill="#ff8cab"/>
+<ellipse cx="185" cy="135" rx="9" ry="18" fill="#ff8cab" transform="rotate(60 185 155)"/>
+<ellipse cx="185" cy="135" rx="9" ry="18" fill="#ff8cab" transform="rotate(120 185 155)"/>
+
+</g>
+
+<!-- bottom flowers -->
+
+<g class="flower f4">
+
+<circle cx="90" cy="205" r="10" fill="#ffd84d"/>
+
+<circle cx="90" cy="188" r="7" fill="#caa5ff"/>
+<circle cx="104" cy="200" r="7" fill="#caa5ff"/>
+<circle cx="76" cy="200" r="7" fill="#caa5ff"/>
+<circle cx="90" cy="214" r="7" fill="#caa5ff"/>
+
+</g>
+
+<g class="flower f5">
+
+<circle cx="210" cy="205" r="10" fill="#ffd84d"/>
+
+<circle cx="210" cy="188" r="7" fill="#ffb347"/>
+<circle cx="224" cy="200" r="7" fill="#ffb347"/>
+<circle cx="196" cy="200" r="7" fill="#ffb347"/>
+<circle cx="210" cy="214" r="7" fill="#ffb347"/>
+
+</g>
+
+<!-- ribbon -->
+
+<polygon class="ribbon"
+points="135,330 150,345 165,330 150,360"/>
+
+</svg>
+
 </div>
-
-<canvas id="c"></canvas>
-
-<script>
-
-const canvas=document.getElementById("c");
-const ctx=canvas.getContext("2d");
-
-function resize(){
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
-}
-
-window.onresize=resize;
-resize();
-
-const flowers=[];
-
-function makeFlower(){
-
-    flowers.push({
-
-        x:Math.random()*canvas.width,
-
-        y:canvas.height-20-Math.random()*220,
-
-        stem:0,
-
-        target:50+Math.random()*80,
-
-        petals:0,
-
-        color:[
-            "#ff6fa8",
-            "#ffb347",
-            "#ffd93d",
-            "#b784ff",
-            "#ff5c8a",
-            "#ff8fab"
-        ][Math.floor(Math.random()*6)]
-
-    });
-
-}
-
-for(let i=0;i<80;i++){
-
-    setTimeout(makeFlower,i*120);
-
-}
-
-function drawFlower(f){
-
-    // stem
-
-    ctx.strokeStyle="#3fa34d";
-    ctx.lineWidth=4;
-
-    ctx.beginPath();
-
-    ctx.moveTo(f.x,canvas.height);
-
-    ctx.lineTo(f.x,canvas.height-f.stem);
-
-    ctx.stroke();
-
-    if(f.stem<f.target){
-
-        f.stem+=2;
-
-        return;
-
-    }
-
-    if(f.petals<1){
-
-        f.petals+=0.03;
-
-    }
-
-    const cy=canvas.height-f.target;
-
-    // petals
-
-    ctx.fillStyle=f.color;
-
-    for(let i=0;i<8;i++){
-
-        ctx.save();
-
-        ctx.translate(f.x,cy);
-
-        ctx.rotate(i*Math.PI/4);
-
-        ctx.scale(f.petals,f.petals);
-
-        ctx.beginPath();
-
-        ctx.ellipse(0,-12,8,18,0,0,Math.PI*2);
-
-        ctx.fill();
-
-        ctx.restore();
-
-    }
-
-    // center
-
-    ctx.beginPath();
-
-    ctx.fillStyle="#ffd54f";
-
-    ctx.arc(f.x,cy,7*f.petals,0,Math.PI*2);
-
-    ctx.fill();
-
-}
-
-function animate(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // grass
-
-    ctx.fillStyle="#8fd67a";
-
-    ctx.fillRect(0,canvas.height-70,canvas.width,70);
-
-    flowers.forEach(drawFlower);
-
-    requestAnimationFrame(animate);
-
-}
-
-animate();
-
-</script>
 
 </body>
 </html>
