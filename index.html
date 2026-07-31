@@ -151,37 +151,7 @@
   // Try to autoplay on load (best-effort). Many browsers block audible autoplay;
   // we attempt audible play, and if blocked, attempt a muted play and add a one-time
   // resume on first user interaction to unmute/play audibly.
-  (async function tryAutoplay() {
-    if (reducedMotion) { updateUI(false); return; }
-    try {
-      // first try audible autoplay
-      await audio.play();
-      updateUI(true);
-      try { localStorage.setItem('flowers_music_playing','1'); } catch(e){}
-    } catch (err) {
-      // audible autoplay blocked by browser
-      try {
-        // attempt muted autoplay so playback is ready — user can unmute with a tap.
-        audio.muted = true;
-        await audio.play();
-        updateUI(false); // show play icon because it's effectively muted
-        // one-time resume/unmute on first interaction
-        const resume = async () => {
-          audio.muted = false;
-          try {
-            await audio.play();
-            updateUI(true);
-            try { localStorage.setItem('flowers_music_playing','1'); } catch(e){}
-          } catch(e){}
-          window.removeEventListener('pointerdown', resume);
-        };
-        window.addEventListener('pointerdown', resume, { once: true });
-      } catch (e) {
-        // couldn't even play muted; user gesture needed
-        updateUI(false);
-      }
-    }
-  })();
+  
 
   // restore play state if user previously chose to play
   try {
