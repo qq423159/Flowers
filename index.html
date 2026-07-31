@@ -2,193 +2,411 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="A little animated flower for someone special — lightweight, accessible and responsive." />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>For My Beautiful Girl 🌸</title>
-  <!-- Optional: add a favicon file in the repo and point to it here -->
-  <!-- <link rel="icon" href="favicon.png"> -->
 
   <style>
-    /* Layout */
     :root{
-      --pink:#d63384;
-      --text:#7d4b61;
-      --background: linear-gradient(to top,#ffe4ef,#fff9fc);
-      --stem:#3d9c4a;
-      --leaf:#56b95f;
-      --petal:#ff77aa;
-      --center:#ffd54f;
+      --bg1: #b8e8ff;
+      --bg2: #ffe8f5;
+      --title-color:#d63384;
+      --grass:#8fd67a;
     }
 
     html,body{
       margin:0;
-      min-height:100vh; /* avoid clipping on short viewports */
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      background:var(--background);
+      height:100%;
+      width:100%;
       font-family: Georgia, serif;
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
+      background: linear-gradient(var(--bg1), var(--bg2));
+      overflow:hidden; /* page is single-screen canvas layout */
     }
 
-    .container{
+    /* Title/message: always on top, not blocked by canvas */
+    .message{
+      position:fixed;
+      left:0;
+      right:0;
+      top:env(safe-area-inset-top,20px);
       text-align:center;
-      padding:24px;
-      box-sizing:border-box;
+      z-index:20;
+      padding:12px 8px;
+      pointer-events:auto; /* user could interact if needed */
+      -webkit-touch-callout:none;
+      -webkit-user-select:none;
+      user-select:none;
     }
 
-    h1{
-      color:var(--pink);
-      margin:0 0 8px 0;
-      opacity:0;
-      animation:fadeIn 700ms ease forwards;
-      /* responsive size */
-      font-size: clamp(1.25rem, 4vw, 1.75rem);
-    }
-
-    p{
-      color:var(--text);
+    .message h1{
       margin:0;
-      opacity:0;
-      animation:fadeIn 700ms ease forwards;
-      animation-delay:160ms;
-      font-size: clamp(.9rem, 2.5vw, 1rem);
+      color:var(--title-color);
+      text-shadow:0 0 8px rgba(255,255,255,.7);
+      font-size:clamp(1.3rem,5vw,2.4rem);
+      line-height:1;
     }
 
-    svg{
-      width:260px;
-      height:auto;
-      margin-top:20px;
+    .message p{
+      margin:6px 0 0 0;
+      color:#7d4b61;
+      font-size:clamp(.85rem,2.6vw,1rem);
+      text-shadow:0 0 6px rgba(255,255,255,.7);
+    }
+
+    /* Canvas sits behind the message */
+    canvas#c{
+      position:fixed;
+      inset:0;
       display:block;
+      z-index:0;
+      touch-action:none;
     }
 
-    /* Animation & SVG helpers */
-    .stem{
-      stroke:var(--stem);
-      stroke-width:8;
-      stroke-linecap:round;
-      /* dash settings will be overwritten to exact length via JS */
-      stroke-dasharray:220;
-      stroke-dashoffset:220;
-      animation:growStem 900ms ease forwards;
-      animation-delay:700ms;
+    /* Simple accessibility: hide canvas from assistive tech (content is decorative) */
+    canvas[aria-hidden="true"]{ }
+
+    /* Ground strip at bottom (drawn on canvas too, but reserve space visually for clarity) */
+    .bottom-space{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      height: clamp(56px, 12vh, 120px);
+      z-index:5;
+      pointer-events:none;
+      background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,0));
     }
 
-    /* Use transform-box for reliable SVG transforms */
-    .leaf, .petal, .center {
-      transform-box: fill-box;
-      transform-origin: 50% 50%;
-      transform: scale(0);
-    }
-
-    .leaf{
-      fill:var(--leaf);
-      animation:bloomLeaf 500ms cubic-bezier(.2,.9,.25,1) forwards;
-      /* leaves appear slightly earlier than petals */
-      animation-delay:1100ms;
-    }
-
-    .petal{
-      fill:var(--petal);
-      animation:bloomFlower 600ms cubic-bezier(.2,.9,.25,1) forwards;
-      /* default delay for petals; individual petals below override to stagger */
-      animation-delay:1400ms;
-    }
-
-    .petal.delay-1{ animation-delay:1400ms; }
-    .petal.delay-2{ animation-delay:1520ms; }
-    .petal.delay-3{ animation-delay:1640ms; }
-    .petal.delay-4{ animation-delay:1760ms; }
-    .petal.delay-5{ animation-delay:1880ms; }
-    .petal.delay-6{ animation-delay:2000ms; }
-
-    .center{
-      fill:var(--center);
-      animation:bloomFlower 420ms cubic-bezier(.2,.9,.25,1) forwards;
-      animation-delay:2100ms;
-    }
-
-    @keyframes growStem{
-      to{ stroke-dashoffset:0; }
-    }
-
-    @keyframes bloomFlower{
-      0%{ transform: scale(0); }
-      70%{ transform: scale(1.12); }
-      100%{ transform: scale(1); }
-    }
-
-    @keyframes bloomLeaf{
-      from{ transform: scale(0); }
-      to{ transform: scale(1); }
-    }
-
-    @keyframes fadeIn{
-      to{ opacity:1; }
-    }
-
-    /* Respect user preference for reduced motion */
-    @media (prefers-reduced-motion: reduce){
-      * { animation: none !important; transition: none !important; }
-      .stem { stroke-dashoffset:0 !important; }
-      h1, p { opacity:1 !important; }
-      .leaf, .petal, .center { transform: none !important; }
-    }
-
-    /* Small screens: scale down SVG slightly */
-    @media (max-width:360px){
-      svg{ width:200px; }
+    /* Reduced motion — prefer minimal animation */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
     }
   </style>
 </head>
-
 <body>
-  <div class="container">
+  <div class="message" id="message">
     <h1>🌸 Happy National Girlfriend's Day 🌸</h1>
     <p>For the most beautiful flower in my life ❤️</p>
-
-    <!-- Accessible SVG: role + labelled title/desc -->
-    <svg viewBox="0 0 300 400" role="img" aria-labelledby="flowerTitle flowerDesc" xmlns="http://www.w3.org/2000/svg">
-      <title id="flowerTitle">Pink flower growing from a green stem</title>
-      <desc id="flowerDesc">An animated flower: the stem grows, leaves open, petals bloom and a yellow center appears.</desc>
-
-      <!-- Stem (line length will be set by script so animation is exact) -->
-      <line class="stem" x1="150" y1="360" x2="150" y2="90" />
-
-      <!-- Leaves -->
-      <ellipse class="leaf" cx="125" cy="220" rx="25" ry="12" transform="rotate(-30 125 220)" />
-      <ellipse class="leaf" cx="175" cy="180" rx="25" ry="12" transform="rotate(30 175 180)" />
-
-      <!-- Petals (each has a small stagger via extra class) -->
-      <ellipse class="petal delay-1" cx="150" cy="45" rx="18" ry="42" />
-      <ellipse class="petal delay-2" cx="150" cy="45" rx="18" ry="42" transform="rotate(60 150 70)" />
-      <ellipse class="petal delay-3" cx="150" cy="45" rx="18" ry="42" transform="rotate(120 150 70)" />
-      <ellipse class="petal delay-4" cx="150" cy="45" rx="18" ry="42" transform="rotate(180 150 70)" />
-      <ellipse class="petal delay-5" cx="150" cy="45" rx="18" ry="42" transform="rotate(240 150 70)" />
-      <ellipse class="petal delay-6" cx="150" cy="45" rx="18" ry="42" transform="rotate(300 150 70)" />
-
-      <!-- Flower Center -->
-      <circle class="center" cx="150" cy="70" r="18" />
-    </svg>
   </div>
 
+  <canvas id="c" aria-hidden="true"></canvas>
+  <div class="bottom-space" aria-hidden="true"></div>
+
   <script>
-    // Improve the stem animation by using the exact path length,
-    // so the grow animation looks correct at any scale.
-    document.addEventListener('DOMContentLoaded', function () {
-      var stem = document.querySelector('.stem');
-      try {
-        if (stem && typeof stem.getTotalLength === 'function') {
-          var len = stem.getTotalLength();
-          stem.style.strokeDasharray = len;
-          stem.style.strokeDashoffset = len;
-        }
-      } catch (e) {
-        // fallback: do nothing; the CSS defaults still work
-        console.warn('Stem length measurement failed', e);
+    // Improved flower canvas
+    (function () {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+
+      // Options & performance tuning
+      const DPR = Math.max(window.devicePixelRatio || 1, 1);
+      const MIN_FLOWERS = 40;
+      const MAX_FLOWERS = 200; // cap for performance
+      const AREA_PER_FLOWER = 12000; // determines count from screen area
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      let W = 0, H = 0, baseY = 0;
+      let reservedTop = 0; // height reserved for message so flowers don't overlap it
+      let groundHeight = 0;
+      let flowers = [];
+      let lastTime = 0;
+
+      function resize() {
+        // compute logical pixel sizes
+        W = window.innerWidth;
+        H = window.innerHeight;
+
+        // set canvas physical pixels and CSS size
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        canvas.width = Math.floor(W * DPR);
+        canvas.height = Math.floor(H * DPR);
+
+        // set transform so drawing uses CSS pixels
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+        // reserved top: measure message element bottom
+        const msg = document.getElementById('message');
+        const r = msg.getBoundingClientRect();
+        reservedTop = Math.ceil(r.bottom + 8); // keep 8px gap
+
+        // bottom "ground" area
+        groundHeight = Math.max(56, Math.round(H * 0.12)); // min 56px
+        baseY = H - groundHeight;
+
+        // compute desired flower count from screen area
+        const area = W * H;
+        const desired = Math.round(area / AREA_PER_FLOWER);
+        const target = Math.min(MAX_FLOWERS, Math.max(MIN_FLOWERS, desired));
+
+        adjustFlowerCount(target);
       }
-    });
+
+      // Remove excess or add new flowers to match target count
+      function adjustFlowerCount(target) {
+        if (flowers.length > target) {
+          flowers.length = target;
+          return;
+        }
+        while (flowers.length < target) {
+          flowers.push(makeFlower());
+        }
+      }
+
+      function rand(min, max) { return min + Math.random() * (max - min); }
+      function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+      function makeFlower(x, y) {
+        // If x/y not provided, pick random x and y below reservedTop
+        const marginTop = reservedTop + 8;
+        const minY = marginTop + 40;
+        const maxY = baseY - 30; // leave above ground some space
+        const cx = (typeof x === 'number') ? x : rand(20, W - 20);
+        const cy = (typeof y === 'number') ? y : rand(minY, maxY);
+
+        const maxStem = baseY - cy; // how tall the stem is
+        const targetStem = Math.max(10, Math.min(maxStem, rand(20, maxStem)));
+
+        const petalCount = randInt(4, 10); // different petal counts
+        const petalLength = rand(12, 34);
+        const petalWidth = rand(6, 20);
+        const colorPalette = [
+          '#ff6fa8', '#ffb347', '#ffd93d', '#b784ff', '#ff5c8a', '#ff8fab',
+          '#f48fb1', '#f06292', '#ff9e80', '#ffd54f'
+        ];
+        const color = colorPalette[randInt(0, colorPalette.length - 1)];
+        const species = ['ellipse','teardrop','rounded'][randInt(0,2)]; // shape
+        const rotation = rand(0, Math.PI * 2);
+        const sway = rand(0.001, 0.008); // small sway speed
+        const bloomDelay = rand(0, 1600); // stagger blooms for natural effect
+        return {
+          x: cx,
+          baseY: baseY,
+          cy: cy,
+          stemProgress: reducedMotion ? targetStem : 0,
+          targetStem: targetStem,
+          petalProgress: reducedMotion ? 1 : 0,
+          petalCount,
+          petalLength,
+          petalWidth,
+          color,
+          species,
+          rotation,
+          sway,
+          bloomDelay,
+          createdAt: performance.now()
+        };
+      }
+
+      // on click/tap create a flower at pointer (if not in reserved area)
+      function onPointer(e) {
+        // single touch or click: get client coords
+        const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
+        if (clientY <= reservedTop + 12) return; // don't plant in title area
+        const f = makeFlower(clientX, clientY);
+        flowers.push(f);
+        // cap total
+        if (flowers.length > MAX_FLOWERS) flowers.shift();
+      }
+
+      // Drawing helpers ----------------------------------------------------
+
+      function drawStem(f) {
+        const x = f.x;
+        const bottom = f.baseY;
+        const topY = bottom - f.stemProgress;
+
+        ctx.beginPath();
+        ctx.lineWidth = Math.max(2, Math.round((f.petalWidth || 12) * 0.25));
+        ctx.strokeStyle = '#3fa34d';
+        ctx.lineCap = 'round';
+        ctx.moveTo(x, bottom);
+        // slight curve for charm
+        const cpX = x + Math.sin((f.x + f.createdAt) * 0.001) * 8;
+        const cpY = bottom - f.stemProgress * 0.5;
+        ctx.quadraticCurveTo(cpX, cpY, x, topY);
+        ctx.stroke();
+      }
+
+      // petal types: ellipse and teardrop and rounded
+      function drawPetalShape(species, px, py, len, wid, angle, progress, color) {
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(angle);
+        ctx.scale(progress, progress);
+
+        ctx.fillStyle = color;
+
+        if (species === 'ellipse') {
+          // simple ellipse petal
+          ctx.beginPath();
+          ctx.ellipse(0, -len * 0.45, wid, len, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (species === 'teardrop') {
+          // teardrop via bezier
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(wid * 0.6, -len * 0.25, wid * 0.6, -len * 0.75, 0, -len);
+          ctx.bezierCurveTo(-wid * 0.6, -len * 0.75, -wid * 0.6, -len * 0.25, 0, 0);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          // rounded triangular petal
+          ctx.beginPath();
+          ctx.moveTo(0, -len);
+          ctx.quadraticCurveTo(wid, -len * 0.5, 0, 0);
+          ctx.quadraticCurveTo(-wid, -len * 0.5, 0, -len);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawFlower(f, time) {
+        // animate stem
+        const age = time - f.createdAt;
+        if (!reducedMotion) {
+          // bloom only after bloomDelay
+          if (age > f.bloomDelay) {
+            // progress stem
+            if (f.stemProgress < f.targetStem) {
+              f.stemProgress += Math.max(0.6, f.targetStem * 0.02); // growth speed scaled
+              if (f.stemProgress > f.targetStem) f.stemProgress = f.targetStem;
+            } else {
+              // grow petals progress
+              if (f.petalProgress < 1) {
+                f.petalProgress += 0.02 + Math.random() * 0.02;
+                if (f.petalProgress > 1) f.petalProgress = 1;
+              }
+            }
+          }
+        }
+
+        // make the stem
+        drawStem(f);
+
+        // center of flower
+        const cy = f.baseY - f.targetStem; // final center location
+        const currentCenterY = f.baseY - f.stemProgress;
+
+        // compute sway offset
+        const swayOffset = Math.sin((time * f.sway) + f.x * 0.01) * 5 * (1 - f.petalProgress * 0.5);
+        const cx = f.x + swayOffset;
+
+        // petal rotation base
+        const rot = f.rotation + (f.petalProgress * 0.15);
+
+        // draw petals when stem has grown some
+        if (f.petalProgress > 0) {
+          for (let i = 0; i < f.petalCount; i++) {
+            const angle = rot + (i * (Math.PI * 2 / f.petalCount));
+            drawPetalShape(f.species, cx, currentCenterY, f.petalLength, f.petalWidth, angle, f.petalProgress, f.color);
+          }
+
+          // center disk
+          ctx.beginPath();
+          ctx.fillStyle = '#ffd54f';
+          ctx.arc(cx, currentCenterY, Math.max(4, 8 * f.petalProgress), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawGrass() {
+        const grad = ctx.createLinearGradient(0, baseY - 60, 0, H);
+        grad.addColorStop(0, '#9fe784');
+        grad.addColorStop(1, '#6dbb5d');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, baseY, W, H - baseY);
+      }
+
+      // Animation loop ----------------------------------------------------
+      function animate(ts) {
+        if (!lastTime) lastTime = ts;
+        const delta = ts - lastTime;
+        lastTime = ts;
+
+        // clear
+        ctx.clearRect(0, 0, W, H);
+
+        // background subtle (optional)
+        // draw a soft vignette
+        // draw grass/bottom
+        drawGrass();
+
+        // draw flowers
+        for (let i = 0; i < flowers.length; i++) {
+          drawFlower(flowers[i], ts);
+        }
+
+        // keep trimming old flowers if too many
+        if (flowers.length > MAX_FLOWERS) flowers.splice(0, flowers.length - MAX_FLOWERS);
+
+        requestAnimationFrame(animate);
+      }
+
+      // init ---------------------------------------------------------------
+      function init() {
+        resize();
+        // create initial flowers (already added by resize->adjustFlowerCount)
+        // stagger creation times so bloomDelay makes them pop naturally
+        const now = performance.now();
+        flowers.forEach(f => f.createdAt = now - Math.random() * 1200);
+
+        // events
+        window.addEventListener('resize', resize, { passive: true });
+
+        // pointer to plant new flower
+        window.addEventListener('pointerdown', function (ev) {
+          // avoid interfering with text selection on message — if pointer inside message, ignore
+          const target = ev.target;
+          if (target.closest && target.closest('.message')) return;
+          onPointer(ev);
+        }, { passive: true });
+
+        // initial draw
+        requestAnimationFrame(animate);
+      }
+
+      // Seed with a few interesting flowers placed across width
+      function seedInitial() {
+        // clear existing and make a scattering
+        flowers = [];
+        const area = W * H;
+        const desired = Math.round(area / AREA_PER_FLOWER);
+        const target = Math.min(MAX_FLOWERS, Math.max(40, desired));
+        for (let i = 0; i < target; i++) {
+          // prefer bottom area; x spread evenly but jittered
+          const x = Math.round((i / target) * (W - 60) + 30 + rand(-30, 30));
+          const marginTop = reservedTop + 16;
+          const maxY = baseY - 30;
+          const y = rand(Math.max(marginTop + 30, maxY - 160), maxY);
+          const f = makeFlower(x, y);
+          f.createdAt = performance.now() - rand(0, 1400);
+          flowers.push(f);
+        }
+        // add a few large focal flowers
+        for (let i = 0; i < 6; i++) {
+          const x = rand(40, W - 40);
+          const y = rand(baseY - 140, baseY - 40);
+          const big = makeFlower(x, y);
+          big.petalLength *= rand(1.2, 1.8);
+          big.petalWidth *= rand(1.1, 1.6);
+          big.petalCount = randInt(5, 9);
+          big.color = ['#ff6fa8', '#b784ff', '#ff9e80'][randInt(0,2)];
+          big.createdAt = performance.now() - rand(0, 1200);
+          flowers.push(big);
+        }
+      }
+
+      // Kick off
+      init();
+      seedInitial();
+
+      // expose a small helper to regenerate density (useful during dev)
+      window.__flowerRespawn = function() { resize(); seedInitial(); };
+
+    })();
   </script>
 </body>
 </html>
