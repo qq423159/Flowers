@@ -37,7 +37,7 @@
       -webkit-touch-callout:none;
       -webkit-user-select:none;
       user-select:none;
-      background: linear-gradient(rgba(255,255,255,0.0), rgba(255,255,255,0.02)); /* subtle */
+      background: linear-gradient(rgba(255,255,255,0.0), rgba(255,255,255,0.02));
     }
 
     .message h1{
@@ -136,7 +136,6 @@
         adjustCritterCount(Math.max(3, Math.round(W / 240)));
       }
 
-      // FLOWER/ BUTTERFLY code (kept similar to prior version)
       function adjustFlowerCount(target) {
         if (flowers.length > target) { flowers.length = target; return; }
         let attempts = 0;
@@ -153,7 +152,6 @@
         while (butterflies.length > n) butterflies.pop();
       }
 
-      // New: critters (cats, bunnies, dogs)
       function adjustCritterCount(n) {
         while (critters.length < n) critters.push(makeCritter());
         while (critters.length > n) critters.pop();
@@ -170,10 +168,6 @@
         return false;
       }
 
-      // (Flower helpers omitted for brevity in this snippet explanation)
-      // We'll include them below in full code.
-
-      // Flower maker (same as prior)
       function makeFlower(x, y) {
         const marginTop = reservedTop + 8;
         const minY = marginTop + 40;
@@ -214,7 +208,6 @@
         };
       }
 
-      // Butterflies (same as prior) ---------------------------
       function makeButterfly() {
         const x = rand(40, W - 40);
         const y = rand(reservedTop + 60, Math.max(reservedTop + 140, baseY - 140));
@@ -232,28 +225,35 @@
         };
       }
 
-      // New: critter maker
+      // NEW: more detailed critters
       function makeCritter(spec) {
         const species = spec || ['cat','dog','bunny'][randInt(0,2)];
-        const laneCount = Math.max(1, Math.round(groundHeight / 30));
-        // pick lane y near the bottom but above grass edge
-        const laneY = baseY - rand(12, 26);
+        const laneY = baseY - rand(18, 28);
         const dir = Math.random() > 0.5 ? 1 : -1;
-        const speed = rand(0.9, 2.2) * (dir * 0 + 1) * rand(0.6, 1.1); // base
+        const speed = rand(0.6, 1.6) * (Math.random() < 0.6 ? 1 : 1.4);
+        const size = rand(10, 22);
+        // color palettes per species
+        const palettes = {
+          cat: ['#cfa6b3','#d0c0a6','#bfbcbc','#e6b7c7', '#a18aa6'],
+          dog: ['#cfa57d','#b4845a','#e6c7a3','#b88f6a'],
+          bunny: ['#f8f3f2','#efe7e4','#eae1dd']
+        };
+        const color = palettes[species][randInt(0, palettes[species].length - 1)];
         return {
           species,
-          x: dir === 1 ? rand(-60, W + 60) : rand(-60, W + 60),
+          x: dir === 1 ? rand(-80, W + 80) : rand(-80, W + 80),
           y: laneY + rand(-6, 6),
           dir,
-          speed: rand(0.6, 1.8) * (Math.random() < 0.5 ? 1 : 1.4),
-          size: rand(10, 20),
+          speed,
+          size,
           legPhase: rand(0, Math.PI * 2),
           createdAt: performance.now(),
-          vx: 0
+          vx: 0,
+          color
         };
       }
 
-      // Drawing helpers: stems, petals, grass, butterflies (as before)
+      // Drawing helpers for flowers & butterflies (unchanged)
       function drawStem(f) {
         const x = f.x;
         const bottom = f.baseY;
@@ -355,7 +355,7 @@
         ctx.fillRect(0, baseY, W, H - baseY);
       }
 
-      // Butterflies (draw)
+      // Butterflies (unchanged)
       function drawButterfly(b, time) {
         b.wing += b.wingSpeed;
         b.vx += Math.sin(time * 0.0006 + b.createdAt) * 0.002;
@@ -420,118 +420,242 @@
         return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
       }
 
-      // New: draw critter (simple stylized body + running legs)
+      // NEW: improved critter drawing for realistic silhouettes
       function drawCritter(c, time) {
-        // basic horizontal movement and simple avoidance
-        // small random wandering
+        // movement + avoidance
         c.legPhase += 0.18 + c.speed * 0.02;
-        // collision avoidance with other critters
         let fx = 0;
         for (let other of critters) {
           if (other === c) continue;
           const dx = other.x - c.x;
           const dy = other.y - c.y;
           const d = Math.hypot(dx, dy);
-          if (d > 0 && d < 28) {
-            fx += -Math.sign(dx) * (28 - d) * 0.02;
+          if (d > 0 && d < 34) {
+            fx += -Math.sign(dx) * (34 - d) * 0.02;
           }
         }
         c.vx = (c.vx || 0) * 0.9 + (c.dir * c.speed + fx) * 0.2;
         c.x += c.vx;
-        // bounce at edges
-        if (c.x < -40) { c.x = -40; c.dir = 1; c.vx *= -0.6; }
-        if (c.x > W + 40) { c.x = W + 40; c.dir = -1; c.vx *= -0.6; }
 
-        // keep on or near ground lane
-        const minY = baseY - 28;
+        // bounce edges to keep them in view
+        if (c.x < -60) { c.x = -60; c.dir = 1; c.vx *= -0.6; }
+        if (c.x > W + 60) { c.x = W + 60; c.dir = -1; c.vx *= -0.6; }
+
+        // vertical bob for running gait
+        const bob = Math.sin(c.legPhase * 0.9) * (c.size * 0.06);
+        const minY = baseY - 30;
         const maxY = baseY - 8;
-        c.y = Math.max(minY, Math.min(maxY, c.y + Math.sin(time * 0.002 + c.createdAt) * 0.3));
+        c.y = Math.max(minY, Math.min(maxY, c.y + bob * 0.1));
 
-        // draw simple body depending on species
+        // draw critter with a clear facing direction
         ctx.save();
         ctx.translate(c.x, c.y);
-        if (c.dir < 0) {
-          ctx.scale(-1, 1); // flip so they face movement direction
-        }
+        if (c.dir < 0) ctx.scale(-1, 1); // face the direction of travel
 
-        // body
-        ctx.fillStyle = '#e6d6c6';
-        if (c.species === 'dog') ctx.fillStyle = '#cfa57d';
-        if (c.species === 'cat') ctx.fillStyle = '#d0a6c7';
-        if (c.species === 'bunny') ctx.fillStyle = '#f8f3f2';
+        // define body parameters
+        const S = c.size;
+        const bodyW = S * 1.6;
+        const bodyH = S * 0.8;
+        const headX = S * 0.9;
+        const headY = -S * 0.18;
 
-        // main body ellipse
+        // torso with a subtle gradient for depth
+        const tg = ctx.createLinearGradient(-bodyW, -bodyH, bodyW, bodyH);
+        tg.addColorStop(0, lighten(c.color, -0.04));
+        tg.addColorStop(1, c.color);
+        ctx.fillStyle = tg;
         ctx.beginPath();
-        ctx.ellipse(0, 0, c.size * 1.2, c.size * 0.7, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, bodyW, bodyH, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // shadow under body
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.ellipse(0, bodyH * 0.5 + 2, bodyW * 0.7, bodyH * 0.35, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // head
+        ctx.save();
+        ctx.translate(headX, headY);
         ctx.beginPath();
-        ctx.fillStyle = '#7b5a4a';
-        ctx.arc(c.size * 0.9, -c.size * 0.1, c.size * 0.46, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.ellipse(0, 0, S * 0.6, S * 0.55, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // ears / tail depending on species
-        ctx.fillStyle = (c.species === 'bunny') ? '#f8f3f2' : '#7b5a4a';
+        // face base color (slightly darker)
+        ctx.beginPath();
+        ctx.fillStyle = lighten(c.color, -0.06);
+        ctx.ellipse(0, 0, S * 0.56, S * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // species-specific ears / face details
         if (c.species === 'bunny') {
           // long ears
+          ctx.fillStyle = lighten(c.color, -0.06);
           ctx.beginPath();
-          ctx.ellipse(c.size * 1.05, -c.size * 0.9, c.size * 0.2, c.size * 0.6, -0.25, 0, Math.PI * 2);
+          ctx.ellipse(-S * 0.25, -S * 1.05, S * 0.22, S * 0.72, -0.2, 0, Math.PI * 2);
           ctx.fill();
           ctx.beginPath();
-          ctx.ellipse(c.size * 0.72, -c.size * 0.92, c.size * 0.18, c.size * 0.58, 0.18, 0, Math.PI * 2);
+          ctx.ellipse(S * 0.25, -S * 1.05, S * 0.22, S * 0.72, 0.2, 0, Math.PI * 2);
           ctx.fill();
-        } else {
-          // triangular/rounded ears for cat/dog
+          // inner ear
+          ctx.fillStyle = '#f6d6df';
           ctx.beginPath();
-          ctx.moveTo(c.size * 0.6, -c.size * 0.6);
-          ctx.lineTo(c.size * 0.9, -c.size * 1.0);
-          ctx.lineTo(c.size * 1.1, -c.size * 0.6);
+          ctx.ellipse(-S * 0.25, -S * 1.0, S * 0.12, S * 0.5, -0.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(S * 0.25, -S * 1.0, S * 0.12, S * 0.5, 0.2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (c.species === 'cat') {
+          // triangular ears
+          ctx.fillStyle = lighten(c.color, -0.06);
+          ctx.beginPath();
+          ctx.moveTo(-S * 0.35, -S * 0.6);
+          ctx.lineTo(-S * 0.55, -S * 1.0);
+          ctx.lineTo(-S * 0.1, -S * 0.7);
           ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(S * 0.35, -S * 0.6);
+          ctx.lineTo(S * 0.55, -S * 1.0);
+          ctx.lineTo(S * 0.1, -S * 0.7);
+          ctx.closePath();
+          ctx.fill();
+          // inner ear
+          ctx.fillStyle = '#f6d6df';
+          ctx.beginPath();
+          ctx.moveTo(-S * 0.38, -S * 0.68);
+          ctx.lineTo(-S * 0.48, -S * 0.9);
+          ctx.lineTo(-S * 0.18, -S * 0.72);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(S * 0.38, -S * 0.68);
+          ctx.lineTo(S * 0.48, -S * 0.9);
+          ctx.lineTo(S * 0.18, -S * 0.72);
+          ctx.closePath();
+          ctx.fill();
+        } else { // dog
+          // floppy ears
+          ctx.fillStyle = '#7b5a4a';
+          ctx.beginPath();
+          ctx.ellipse(-S * 0.4, -S * 0.35, S * 0.22, S * 0.48, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(S * 0.35, -S * 0.35, S * 0.22, S * 0.48, 0.4, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // tail
+        // eyes
+        ctx.fillStyle = '#1a1a1a';
         ctx.beginPath();
-        ctx.fillStyle = '#7b5a4a';
-        ctx.ellipse(-c.size * 1.1, -c.size * 0.05, c.size * 0.28, c.size * 0.16, 0.6, 0, Math.PI * 2);
+        ctx.ellipse(-S * 0.05, -S * 0.05, S * 0.08, S * 0.10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(S * 0.22, -S * 0.05, S * 0.08, S * 0.10, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // legs: simple vertical oscillation
-        const legOffset = Math.sin(c.legPhase) * c.size * 0.35;
+        // eye highlights
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath(); ctx.arc(-S * 0.08, -S * 0.07, S * 0.02, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(S * 0.20, -S * 0.07, S * 0.02, 0, Math.PI * 2); ctx.fill();
+
+        // nose
+        ctx.fillStyle = '#8b5a57';
+        ctx.beginPath();
+        ctx.moveTo(S * 0.07, S * 0.02);
+        ctx.lineTo(S * -0.02, S * 0.12);
+        ctx.lineTo(S * -0.1, S * 0.02);
+        ctx.closePath();
+        ctx.fill();
+
+        // whiskers for cat and bunny
+        if (c.species === 'cat' || c.species === 'bunny') {
+          ctx.strokeStyle = 'rgba(80,80,80,0.7)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(-S * 0.15, S * 0.02);
+          ctx.lineTo(-S * 0.45, S * 0.00);
+          ctx.moveTo(-S * 0.15, S * 0.06);
+          ctx.lineTo(-S * 0.45, S * 0.08);
+          ctx.moveTo(S * 0.15, S * 0.02);
+          ctx.lineTo(S * 0.45, S * 0.00);
+          ctx.moveTo(S * 0.15, S * 0.06);
+          ctx.lineTo(S * 0.45, S * 0.08);
+          ctx.stroke();
+        }
+
+        ctx.restore(); // end head
+
+        // tail / markings
+        if (c.species === 'bunny') {
+          // cotton tail
+          ctx.beginPath();
+          ctx.fillStyle = '#fff';
+          ctx.arc(-bodyW * 0.9, -S * 0.05, S * 0.36, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (c.species === 'cat') {
+          // curved tail
+          ctx.beginPath();
+          ctx.strokeStyle = lighten(c.color, -0.02);
+          ctx.lineWidth = Math.max(3, S * 0.12);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(-bodyW * 0.5, -S * 0.05);
+          ctx.quadraticCurveTo(-bodyW * 1.0, -S * 1.2, -bodyW * 0.2, -S * 1.6);
+          ctx.stroke();
+        } else {
+          // dog wagging tail
+          ctx.save();
+          ctx.translate(-bodyW * 0.6, -S * 0.1);
+          ctx.rotate(Math.sin(time * 0.01 + c.createdAt) * 0.6);
+          ctx.fillStyle = '#7b5a4a';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, S * 0.26, S * 0.12, 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // legs with running animation (front/back)
+        const legStretch = Math.sin(c.legPhase) * S * 0.24;
         ctx.strokeStyle = '#6b4f42';
-        ctx.lineWidth = Math.max(1, c.size * 0.09);
+        ctx.lineWidth = Math.max(1, S * 0.09);
         ctx.lineCap = 'round';
-
-        // front legs
+        // front left
         ctx.beginPath();
-        ctx.moveTo(c.size * 0.3, c.size * 0.4);
-        ctx.lineTo(c.size * 0.3, c.size * 0.4 + legOffset * 0.6);
+        ctx.moveTo(S * 0.5, S * 0.45);
+        ctx.lineTo(S * 0.5, S * 0.45 + legStretch);
+        ctx.stroke();
+        // front right (alternating)
+        ctx.beginPath();
+        ctx.moveTo(S * 0.2, S * 0.45);
+        ctx.lineTo(S * 0.2, S * 0.45 - legStretch);
+        ctx.stroke();
+        // back left
+        ctx.beginPath();
+        ctx.moveTo(-S * 0.2, S * 0.45);
+        ctx.lineTo(-S * 0.2, S * 0.45 - legStretch);
+        ctx.stroke();
+        // back right
+        ctx.beginPath();
+        ctx.moveTo(-S * 0.5, S * 0.45);
+        ctx.lineTo(-S * 0.5, S * 0.45 + legStretch);
         ctx.stroke();
 
-        ctx.beginPath();
-        ctx.moveTo(c.size * 0.6, c.size * 0.4);
-        ctx.lineTo(c.size * 0.6, c.size * 0.4 + -legOffset * 0.6);
-        ctx.stroke();
+        // small decorative markings (spots/stripes)
+        if (c.species === 'dog') {
+          ctx.fillStyle = lighten(c.color, -0.12);
+          ctx.beginPath();
+          ctx.arc(-S * 0.2, -S * 0.05, S * 0.28, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (c.species === 'cat') {
+          ctx.fillStyle = lighten(c.color, -0.08);
+          ctx.beginPath();
+          ctx.ellipse(0, -S * 0.05, S * 0.35, S * 0.12, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
-        // back legs
-        ctx.beginPath();
-        ctx.moveTo(-c.size * 0.3, c.size * 0.45);
-        ctx.lineTo(-c.size * 0.3, c.size * 0.45 + -legOffset * 0.6);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(-c.size * 0.6, c.size * 0.45);
-        ctx.lineTo(-c.size * 0.6, c.size * 0.45 + legOffset * 0.6);
-        ctx.stroke();
-
-        // eyes (small)
-        ctx.fillStyle = '#111';
-        ctx.beginPath();
-        ctx.arc(c.size * 0.98, -c.size * 0.16, Math.max(0.8, c.size * 0.08), 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
+        ctx.restore(); // restore global state
       }
 
       // Animation loop
@@ -550,7 +674,7 @@
           drawFlower(flowers[i], ts);
         }
 
-        // critters on bottom (draw above flowers so they're visible)
+        // critters on bottom (draw above flowers)
         for (let c of critters) drawCritter(c, ts);
 
         // butterflies on top of critters/flowers but behind title
