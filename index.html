@@ -1,191 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A little animated flower for someone special — lightweight, accessible and responsive." />
+  <title>For My Beautiful Girl 🌸</title>
+  <!-- Optional: add a favicon file in the repo and point to it here -->
+  <!-- <link rel="icon" href="favicon.png"> -->
 
-<title>For My Beautiful Girl 🌸</title>
+  <style>
+    /* Layout */
+    :root{
+      --pink:#d63384;
+      --text:#7d4b61;
+      --background: linear-gradient(to top,#ffe4ef,#fff9fc);
+      --stem:#3d9c4a;
+      --leaf:#56b95f;
+      --petal:#ff77aa;
+      --center:#ffd54f;
+    }
 
-<style>
+    html,body{
+      margin:0;
+      min-height:100vh; /* avoid clipping on short viewports */
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:var(--background);
+      font-family: Georgia, serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
 
-html,body{
-    margin:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:linear-gradient(#b8e8ff,#ffe8f5);
-    font-family:Georgia,serif;
-}
+    .container{
+      text-align:center;
+      padding:24px;
+      box-sizing:border-box;
+    }
 
-canvas{
-    display:block;
-}
+    h1{
+      color:var(--pink);
+      margin:0 0 8px 0;
+      opacity:0;
+      animation:fadeIn 700ms ease forwards;
+      /* responsive size */
+      font-size: clamp(1.25rem, 4vw, 1.75rem);
+    }
 
-.message{
-    position:absolute;
-    top:40px;
-    width:100%;
-    text-align:center;
-    color:#d63384;
-    text-shadow:0 0 10px white;
-}
+    p{
+      color:var(--text);
+      margin:0;
+      opacity:0;
+      animation:fadeIn 700ms ease forwards;
+      animation-delay:160ms;
+      font-size: clamp(.9rem, 2.5vw, 1rem);
+    }
 
-.message h1{
-    margin:0;
-    font-size:clamp(2rem,5vw,3.5rem);
-}
+    svg{
+      width:260px;
+      height:auto;
+      margin-top:20px;
+      display:block;
+    }
 
-.message p{
-    margin-top:10px;
-    font-size:clamp(1rem,2.5vw,1.4rem);
-}
+    /* Animation & SVG helpers */
+    .stem{
+      stroke:var(--stem);
+      stroke-width:8;
+      stroke-linecap:round;
+      /* dash settings will be overwritten to exact length via JS */
+      stroke-dasharray:220;
+      stroke-dashoffset:220;
+      animation:growStem 900ms ease forwards;
+      animation-delay:700ms;
+    }
 
-</style>
+    /* Use transform-box for reliable SVG transforms */
+    .leaf, .petal, .center {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      transform: scale(0);
+    }
+
+    .leaf{
+      fill:var(--leaf);
+      animation:bloomLeaf 500ms cubic-bezier(.2,.9,.25,1) forwards;
+      /* leaves appear slightly earlier than petals */
+      animation-delay:1100ms;
+    }
+
+    .petal{
+      fill:var(--petal);
+      animation:bloomFlower 600ms cubic-bezier(.2,.9,.25,1) forwards;
+      /* default delay for petals; individual petals below override to stagger */
+      animation-delay:1400ms;
+    }
+
+    .petal.delay-1{ animation-delay:1400ms; }
+    .petal.delay-2{ animation-delay:1520ms; }
+    .petal.delay-3{ animation-delay:1640ms; }
+    .petal.delay-4{ animation-delay:1760ms; }
+    .petal.delay-5{ animation-delay:1880ms; }
+    .petal.delay-6{ animation-delay:2000ms; }
+
+    .center{
+      fill:var(--center);
+      animation:bloomFlower 420ms cubic-bezier(.2,.9,.25,1) forwards;
+      animation-delay:2100ms;
+    }
+
+    @keyframes growStem{
+      to{ stroke-dashoffset:0; }
+    }
+
+    @keyframes bloomFlower{
+      0%{ transform: scale(0); }
+      70%{ transform: scale(1.12); }
+      100%{ transform: scale(1); }
+    }
+
+    @keyframes bloomLeaf{
+      from{ transform: scale(0); }
+      to{ transform: scale(1); }
+    }
+
+    @keyframes fadeIn{
+      to{ opacity:1; }
+    }
+
+    /* Respect user preference for reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      * { animation: none !important; transition: none !important; }
+      .stem { stroke-dashoffset:0 !important; }
+      h1, p { opacity:1 !important; }
+      .leaf, .petal, .center { transform: none !important; }
+    }
+
+    /* Small screens: scale down SVG slightly */
+    @media (max-width:360px){
+      svg{ width:200px; }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="container">
+    <h1>🌸 Happy National Girlfriend's Day 🌸</h1>
+    <p>For the most beautiful flower in my life ❤️</p>
 
-<div class="message">
-<h1>🌸 Happy National Girlfriend's Day 🌸</h1>
-<p>For the most beautiful flower in my life ❤️</p>
-</div>
+    <!-- Accessible SVG: role + labelled title/desc -->
+    <svg viewBox="0 0 300 400" role="img" aria-labelledby="flowerTitle flowerDesc" xmlns="http://www.w3.org/2000/svg">
+      <title id="flowerTitle">Pink flower growing from a green stem</title>
+      <desc id="flowerDesc">An animated flower: the stem grows, leaves open, petals bloom and a yellow center appears.</desc>
 
-<canvas id="c"></canvas>
+      <!-- Stem (line length will be set by script so animation is exact) -->
+      <line class="stem" x1="150" y1="360" x2="150" y2="90" />
 
-<script>
+      <!-- Leaves -->
+      <ellipse class="leaf" cx="125" cy="220" rx="25" ry="12" transform="rotate(-30 125 220)" />
+      <ellipse class="leaf" cx="175" cy="180" rx="25" ry="12" transform="rotate(30 175 180)" />
 
-const canvas=document.getElementById("c");
-const ctx=canvas.getContext("2d");
+      <!-- Petals (each has a small stagger via extra class) -->
+      <ellipse class="petal delay-1" cx="150" cy="45" rx="18" ry="42" />
+      <ellipse class="petal delay-2" cx="150" cy="45" rx="18" ry="42" transform="rotate(60 150 70)" />
+      <ellipse class="petal delay-3" cx="150" cy="45" rx="18" ry="42" transform="rotate(120 150 70)" />
+      <ellipse class="petal delay-4" cx="150" cy="45" rx="18" ry="42" transform="rotate(180 150 70)" />
+      <ellipse class="petal delay-5" cx="150" cy="45" rx="18" ry="42" transform="rotate(240 150 70)" />
+      <ellipse class="petal delay-6" cx="150" cy="45" rx="18" ry="42" transform="rotate(300 150 70)" />
 
-function resize(){
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
-}
+      <!-- Flower Center -->
+      <circle class="center" cx="150" cy="70" r="18" />
+    </svg>
+  </div>
 
-window.onresize=resize;
-resize();
-
-const flowers=[];
-
-function makeFlower(){
-
-    flowers.push({
-
-        x:Math.random()*canvas.width,
-
-        y:canvas.height-20-Math.random()*220,
-
-        stem:0,
-
-        target:50+Math.random()*80,
-
-        petals:0,
-
-        color:[
-            "#ff6fa8",
-            "#ffb347",
-            "#ffd93d",
-            "#b784ff",
-            "#ff5c8a",
-            "#ff8fab"
-        ][Math.floor(Math.random()*6)]
-
+  <script>
+    // Improve the stem animation by using the exact path length,
+    // so the grow animation looks correct at any scale.
+    document.addEventListener('DOMContentLoaded', function () {
+      var stem = document.querySelector('.stem');
+      try {
+        if (stem && typeof stem.getTotalLength === 'function') {
+          var len = stem.getTotalLength();
+          stem.style.strokeDasharray = len;
+          stem.style.strokeDashoffset = len;
+        }
+      } catch (e) {
+        // fallback: do nothing; the CSS defaults still work
+        console.warn('Stem length measurement failed', e);
+      }
     });
-
-}
-
-for(let i=0;i<80;i++){
-
-    setTimeout(makeFlower,i*120);
-
-}
-
-function drawFlower(f){
-
-    // stem
-
-    ctx.strokeStyle="#3fa34d";
-    ctx.lineWidth=4;
-
-    ctx.beginPath();
-
-    ctx.moveTo(f.x,canvas.height);
-
-    ctx.lineTo(f.x,canvas.height-f.stem);
-
-    ctx.stroke();
-
-    if(f.stem<f.target){
-
-        f.stem+=2;
-
-        return;
-
-    }
-
-    if(f.petals<1){
-
-        f.petals+=0.03;
-
-    }
-
-    const cy=canvas.height-f.target;
-
-    // petals
-
-    ctx.fillStyle=f.color;
-
-    for(let i=0;i<8;i++){
-
-        ctx.save();
-
-        ctx.translate(f.x,cy);
-
-        ctx.rotate(i*Math.PI/4);
-
-        ctx.scale(f.petals,f.petals);
-
-        ctx.beginPath();
-
-        ctx.ellipse(0,-12,8,18,0,0,Math.PI*2);
-
-        ctx.fill();
-
-        ctx.restore();
-
-    }
-
-    // center
-
-    ctx.beginPath();
-
-    ctx.fillStyle="#ffd54f";
-
-    ctx.arc(f.x,cy,7*f.petals,0,Math.PI*2);
-
-    ctx.fill();
-
-}
-
-function animate(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // grass
-
-    ctx.fillStyle="#8fd67a";
-
-    ctx.fillRect(0,canvas.height-70,canvas.width,70);
-
-    flowers.forEach(drawFlower);
-
-    requestAnimationFrame(animate);
-
-}
-
-animate();
-
-</script>
-
+  </script>
 </body>
 </html>
