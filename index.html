@@ -23,41 +23,50 @@
       overflow:hidden;
     }
 
+    /* Title/message: always on top, not blocked by canvas.
+       Ensure the heading fits in one line on narrow screens. */
     .message{
       position:fixed;
       left:0;
       right:0;
-      top:env(safe-area-inset-top,20px);
+      top:env(safe-area-inset-top,12px);
       text-align:center;
-      z-index:20;
-      padding:12px 8px;
+      z-index:40;
+      padding:8px 10px;
       pointer-events:auto;
       -webkit-touch-callout:none;
       -webkit-user-select:none;
       user-select:none;
+      background: linear-gradient(rgba(255,255,255,0.0), rgba(255,255,255,0.02)); /* subtle */
     }
 
     .message h1{
       margin:0;
       color:var(--title-color);
       text-shadow:0 0 8px rgba(255,255,255,.7);
-      font-size:clamp(1.3rem,5vw,2.4rem);
+      /* clamp so it becomes small enough on narrow phones; force single-line */
+      font-size: clamp(1rem, 4.6vw, 1.6rem);
       line-height:1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
     .message p{
       margin:6px 0 0 0;
       color:#7d4b61;
-      font-size:clamp(.85rem,2.6vw,1rem);
+      font-size: clamp(.78rem, 2.3vw, .98rem);
       text-shadow:0 0 6px rgba(255,255,255,.7);
     }
 
+    /* Canvas behind message */
     canvas#c{
       position:fixed;
       inset:0;
       display:block;
       z-index:0;
       touch-action:none;
+      background: transparent;
     }
 
     .bottom-space{
@@ -68,7 +77,6 @@
       height: clamp(56px, 12vh, 120px);
       z-index:5;
       pointer-events:none;
-      background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,0));
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -93,13 +101,12 @@
       const DPR = Math.max(window.devicePixelRatio || 1, 1);
       const MIN_FLOWERS = 40;
       const MAX_FLOWERS = 220;
-      const AREA_PER_FLOWER = 9000; // smaller => more flowers
+      const AREA_PER_FLOWER = 9000;
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       let W = 0, H = 0, baseY = 0;
       let reservedTop = 0, groundHeight = 0;
-      let flowers = [];
-      let butterflies = [];
+      let flowers = [], butterflies = [], critters = [];
       let lastTime = 0;
 
       function rand(min, max) { return min + Math.random() * (max - min); }
@@ -116,7 +123,7 @@
 
         const msg = document.getElementById('message');
         const r = msg.getBoundingClientRect();
-        reservedTop = Math.ceil(r.bottom + 8);
+        reservedTop = Math.ceil(r.bottom + 6);
         groundHeight = Math.max(56, Math.round(H * 0.12));
         baseY = H - groundHeight;
 
@@ -124,24 +131,19 @@
         const desired = Math.round(area / AREA_PER_FLOWER);
         const target = Math.min(MAX_FLOWERS, Math.max(MIN_FLOWERS, desired));
         adjustFlowerCount(target);
+
         adjustButterflyCount(Math.max(3, Math.round(W / 240)));
+        adjustCritterCount(Math.max(3, Math.round(W / 240)));
       }
 
+      // FLOWER/ BUTTERFLY code (kept similar to prior version)
       function adjustFlowerCount(target) {
-        if (flowers.length > target) {
-          flowers.length = target;
-          return;
-        }
+        if (flowers.length > target) { flowers.length = target; return; }
         let attempts = 0;
         while (flowers.length < target && attempts < target * 6) {
           const f = makeFlower();
-          // ensure spacing before accepting
-          if (!isTooCloseToOthers(f, 0.85)) {
-            flowers.push(f);
-          } else {
-            // small chance to accept to avoid infinite loop on tiny screens
-            if (Math.random() < 0.05) flowers.push(f);
-          }
+          if (!isTooCloseToOthers(f, 0.85)) flowers.push(f);
+          else if (Math.random() < 0.05) flowers.push(f);
           attempts++;
         }
       }
@@ -151,7 +153,12 @@
         while (butterflies.length > n) butterflies.pop();
       }
 
-      // Collision check: return true if too close to existing flowers
+      // New: critters (cats, bunnies, dogs)
+      function adjustCritterCount(n) {
+        while (critters.length < n) critters.push(makeCritter());
+        while (critters.length > n) critters.pop();
+      }
+
       function isTooCloseToOthers(candidate, overlapFactor = 1.0) {
         const minDist = (candidate.petalLength + 20) * overlapFactor;
         for (let f of flowers) {
@@ -163,17 +170,18 @@
         return false;
       }
 
+      // (Flower helpers omitted for brevity in this snippet explanation)
+      // We'll include them below in full code.
+
+      // Flower maker (same as prior)
       function makeFlower(x, y) {
         const marginTop = reservedTop + 8;
         const minY = marginTop + 40;
         const maxY = baseY - 30;
-
         const cx = (typeof x === 'number') ? x : rand(30, W - 30);
         const cy = (typeof y === 'number') ? y : rand(Math.max(minY, maxY - 180), maxY);
-
         const maxStem = baseY - cy;
         const targetStem = Math.max(14, Math.min(maxStem, rand(26, maxStem)));
-
         const petalCount = randInt(4, 10);
         const petalLength = rand(12, 36);
         const petalWidth = rand(6, 20);
@@ -186,7 +194,6 @@
         const rotation = rand(0, Math.PI * 2);
         const sway = rand(0.001, 0.008);
         const bloomDelay = rand(0, 1600);
-
         return {
           x: cx,
           baseY: baseY,
@@ -203,10 +210,11 @@
           sway,
           bloomDelay,
           createdAt: performance.now(),
-          vx: 0 // horizontal velocity for gentle repulsion
+          vx: 0
         };
       }
 
+      // Butterflies (same as prior) ---------------------------
       function makeButterfly() {
         const x = rand(40, W - 40);
         const y = rand(reservedTop + 60, Math.max(reservedTop + 140, baseY - 140));
@@ -224,12 +232,32 @@
         };
       }
 
-      // Drawing helpers
+      // New: critter maker
+      function makeCritter(spec) {
+        const species = spec || ['cat','dog','bunny'][randInt(0,2)];
+        const laneCount = Math.max(1, Math.round(groundHeight / 30));
+        // pick lane y near the bottom but above grass edge
+        const laneY = baseY - rand(12, 26);
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        const speed = rand(0.9, 2.2) * (dir * 0 + 1) * rand(0.6, 1.1); // base
+        return {
+          species,
+          x: dir === 1 ? rand(-60, W + 60) : rand(-60, W + 60),
+          y: laneY + rand(-6, 6),
+          dir,
+          speed: rand(0.6, 1.8) * (Math.random() < 0.5 ? 1 : 1.4),
+          size: rand(10, 20),
+          legPhase: rand(0, Math.PI * 2),
+          createdAt: performance.now(),
+          vx: 0
+        };
+      }
+
+      // Drawing helpers: stems, petals, grass, butterflies (as before)
       function drawStem(f) {
         const x = f.x;
         const bottom = f.baseY;
         const topY = bottom - f.stemProgress;
-
         ctx.beginPath();
         ctx.lineWidth = Math.max(2, Math.round(f.petalWidth * 0.25));
         ctx.strokeStyle = '#3fa34d';
@@ -247,7 +275,6 @@
         ctx.rotate(angle);
         ctx.scale(progress, progress);
         ctx.fillStyle = color;
-
         if (species === 'ellipse') {
           ctx.beginPath();
           ctx.ellipse(0, -len * 0.45, wid, len, 0, 0, Math.PI * 2);
@@ -270,7 +297,6 @@
       }
 
       function drawFlower(f, time) {
-        // animate stem and petals
         const age = time - f.createdAt;
         if (!reducedMotion) {
           if (age > f.bloomDelay) {
@@ -285,9 +311,7 @@
             }
           }
         }
-
-        // simple repulsion between nearby flowers to reduce blocking:
-        // compute forces against neighbors and update vx & x slightly
+        // gentle repulsion
         const repulsionRange = Math.max(30, f.petalLength * 1.6);
         let fx = 0;
         for (let other of flowers) {
@@ -300,17 +324,12 @@
             fx += -Math.sign(dx) * push * 0.6;
           }
         }
-        // Apply small velocity and clamp
         f.vx = (f.vx * 0.85) + fx * 0.2;
         f.vx = Math.max(-1.6, Math.min(1.6, f.vx));
         f.x += f.vx;
-
-        // ensure not leaving canvas
         f.x = Math.max(20, Math.min(W - 20, f.x));
 
         drawStem(f);
-
-        // draw petals and center
         const currentCenterY = f.baseY - f.stemProgress;
         const swayOffset = Math.sin((time * f.sway) + f.x * 0.01) * 4 * (1 - f.petalProgress * 0.5);
         const cx = f.x + swayOffset;
@@ -336,35 +355,26 @@
         ctx.fillRect(0, baseY, W, H - baseY);
       }
 
-      // Butterflies
+      // Butterflies (draw)
       function drawButterfly(b, time) {
-        // wing flapping
         b.wing += b.wingSpeed;
-        // gentle wandering path
         b.vx += Math.sin(time * 0.0006 + b.createdAt) * 0.002;
         b.vy += Math.cos(time * 0.0009 + b.createdAt) * 0.002;
-        // limit speed
         b.vx = Math.max(-1.6, Math.min(1.6, b.vx));
         b.vy = Math.max(-1.2, Math.min(1.2, b.vy));
         b.x += (b.vx + Math.sin(time * 0.0008 + b.x * 0.01) * 0.3);
         b.y += b.vy + Math.sin(time * 0.002 + b.y * 0.01) * 0.6;
-
-        // keep butterflies away from reserved top
         const minY = reservedTop + 20;
         if (b.y < minY) b.y = minY + Math.abs(b.vy) + 4;
-
-        // wrap edges horizontally
         if (b.x < -40) b.x = W + 40;
         if (b.x > W + 40) b.x = -40;
         if (b.y < reservedTop + 10) b.y = reservedTop + 10;
         if (b.y > baseY - 20) b.y = baseY - 20;
 
-        // draw: two wings and a body
         ctx.save();
         ctx.translate(b.x, b.y);
         const wingAngle = Math.sin(b.wing) * 0.9;
         const wingFlap = 1 + Math.sin(b.wing * b.wingSpeed * 6) * 0.15;
-
         // left wing
         ctx.save();
         ctx.rotate(-0.4 + wingAngle * 0.35);
@@ -374,7 +384,6 @@
         ctx.ellipse(-b.size * 0.6, 0, b.size * 0.9, b.size * 0.5, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-
         // right wing
         ctx.save();
         ctx.rotate(0.4 - wingAngle * 0.35);
@@ -384,13 +393,11 @@
         ctx.ellipse(b.size * 0.6, 0, b.size * 0.9, b.size * 0.5, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-
         // body
         ctx.beginPath();
         ctx.fillStyle = '#4b3b3b';
         ctx.ellipse(0, 0, b.size * 0.18, b.size * 0.8, Math.PI / 2, 0, Math.PI * 2);
         ctx.fill();
-
         // antennae
         ctx.strokeStyle = '#3b2b2b';
         ctx.lineWidth = 1;
@@ -400,12 +407,10 @@
         ctx.moveTo(2, -b.size * 0.8);
         ctx.quadraticCurveTo(6, -b.size * 1.6, 10, -b.size * 1.8);
         ctx.stroke();
-
         ctx.restore();
       }
 
       function lighten(hex, amt) {
-        // hex to RGB lighten
         const col = hex.replace('#','');
         const num = parseInt(col,16);
         let r = (num >> 16) + Math.round(255 * amt);
@@ -413,6 +418,120 @@
         let b = (num & 0x0000FF) + Math.round(255 * amt);
         r = Math.min(255, r); g = Math.min(255, g); b = Math.min(255, b);
         return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+      }
+
+      // New: draw critter (simple stylized body + running legs)
+      function drawCritter(c, time) {
+        // basic horizontal movement and simple avoidance
+        // small random wandering
+        c.legPhase += 0.18 + c.speed * 0.02;
+        // collision avoidance with other critters
+        let fx = 0;
+        for (let other of critters) {
+          if (other === c) continue;
+          const dx = other.x - c.x;
+          const dy = other.y - c.y;
+          const d = Math.hypot(dx, dy);
+          if (d > 0 && d < 28) {
+            fx += -Math.sign(dx) * (28 - d) * 0.02;
+          }
+        }
+        c.vx = (c.vx || 0) * 0.9 + (c.dir * c.speed + fx) * 0.2;
+        c.x += c.vx;
+        // bounce at edges
+        if (c.x < -40) { c.x = -40; c.dir = 1; c.vx *= -0.6; }
+        if (c.x > W + 40) { c.x = W + 40; c.dir = -1; c.vx *= -0.6; }
+
+        // keep on or near ground lane
+        const minY = baseY - 28;
+        const maxY = baseY - 8;
+        c.y = Math.max(minY, Math.min(maxY, c.y + Math.sin(time * 0.002 + c.createdAt) * 0.3));
+
+        // draw simple body depending on species
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        if (c.dir < 0) {
+          ctx.scale(-1, 1); // flip so they face movement direction
+        }
+
+        // body
+        ctx.fillStyle = '#e6d6c6';
+        if (c.species === 'dog') ctx.fillStyle = '#cfa57d';
+        if (c.species === 'cat') ctx.fillStyle = '#d0a6c7';
+        if (c.species === 'bunny') ctx.fillStyle = '#f8f3f2';
+
+        // main body ellipse
+        ctx.beginPath();
+        ctx.ellipse(0, 0, c.size * 1.2, c.size * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // head
+        ctx.beginPath();
+        ctx.fillStyle = '#7b5a4a';
+        ctx.arc(c.size * 0.9, -c.size * 0.1, c.size * 0.46, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ears / tail depending on species
+        ctx.fillStyle = (c.species === 'bunny') ? '#f8f3f2' : '#7b5a4a';
+        if (c.species === 'bunny') {
+          // long ears
+          ctx.beginPath();
+          ctx.ellipse(c.size * 1.05, -c.size * 0.9, c.size * 0.2, c.size * 0.6, -0.25, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(c.size * 0.72, -c.size * 0.92, c.size * 0.18, c.size * 0.58, 0.18, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // triangular/rounded ears for cat/dog
+          ctx.beginPath();
+          ctx.moveTo(c.size * 0.6, -c.size * 0.6);
+          ctx.lineTo(c.size * 0.9, -c.size * 1.0);
+          ctx.lineTo(c.size * 1.1, -c.size * 0.6);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // tail
+        ctx.beginPath();
+        ctx.fillStyle = '#7b5a4a';
+        ctx.ellipse(-c.size * 1.1, -c.size * 0.05, c.size * 0.28, c.size * 0.16, 0.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // legs: simple vertical oscillation
+        const legOffset = Math.sin(c.legPhase) * c.size * 0.35;
+        ctx.strokeStyle = '#6b4f42';
+        ctx.lineWidth = Math.max(1, c.size * 0.09);
+        ctx.lineCap = 'round';
+
+        // front legs
+        ctx.beginPath();
+        ctx.moveTo(c.size * 0.3, c.size * 0.4);
+        ctx.lineTo(c.size * 0.3, c.size * 0.4 + legOffset * 0.6);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(c.size * 0.6, c.size * 0.4);
+        ctx.lineTo(c.size * 0.6, c.size * 0.4 + -legOffset * 0.6);
+        ctx.stroke();
+
+        // back legs
+        ctx.beginPath();
+        ctx.moveTo(-c.size * 0.3, c.size * 0.45);
+        ctx.lineTo(-c.size * 0.3, c.size * 0.45 + -legOffset * 0.6);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-c.size * 0.6, c.size * 0.45);
+        ctx.lineTo(-c.size * 0.6, c.size * 0.45 + legOffset * 0.6);
+        ctx.stroke();
+
+        // eyes (small)
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.arc(c.size * 0.98, -c.size * 0.16, Math.max(0.8, c.size * 0.08), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
       }
 
       // Animation loop
@@ -423,8 +542,7 @@
 
         ctx.clearRect(0, 0, W, H);
 
-        // subtle background vignette (optional)
-        // draw ground first
+        // background + ground
         drawGrass();
 
         // draw flowers
@@ -432,28 +550,27 @@
           drawFlower(flowers[i], ts);
         }
 
-        // draw butterflies on top of flowers but still behind title (canvas is behind title)
-        for (let b of butterflies) {
-          drawButterfly(b, ts);
-        }
+        // critters on bottom (draw above flowers so they're visible)
+        for (let c of critters) drawCritter(c, ts);
 
-        // limit count safety
+        // butterflies on top of critters/flowers but behind title
+        for (let b of butterflies) drawButterfly(b, ts);
+
+        // safety trim
         if (flowers.length > MAX_FLOWERS) flowers.splice(0, flowers.length - MAX_FLOWERS);
 
         requestAnimationFrame(animate);
       }
 
-      // pointer to plant new flower (tap/click)
+      // Pointer to plant flower (tap/click)
       function onPointer(e) {
         const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
         const clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
         if (clientY <= reservedTop + 12) return;
         const f = makeFlower(clientX, clientY);
-        // try to ensure spacing
         if (!isTooCloseToOthers(f, 0.85)) {
           flowers.push(f);
         } else {
-          // nudge x until it fits or accept after several tries
           let tries = 0;
           while (isTooCloseToOthers(f, 0.85) && tries < 8) {
             f.x = Math.max(30, Math.min(W - 30, f.x + rand(-36, 36)));
@@ -464,37 +581,35 @@
         if (flowers.length > MAX_FLOWERS) flowers.shift();
       }
 
+      // Seed and init
       function init() {
         resize();
-        // seed initial flowers and butterflies
         seedInitial();
         const now = performance.now();
         flowers.forEach(f => f.createdAt = now - Math.random() * 1200);
-
         window.addEventListener('resize', resize, { passive: true });
         window.addEventListener('pointerdown', function(ev) {
-          // if pointer was in the title/message, ignore
           const target = ev.target;
           if (target.closest && target.closest('.message')) return;
           onPointer(ev);
         }, { passive: true });
-
         requestAnimationFrame(animate);
       }
 
       function seedInitial() {
         flowers = [];
+        butterflies = [];
+        critters = [];
         const area = W * H;
         const desired = Math.round(area / AREA_PER_FLOWER);
         const target = Math.min(MAX_FLOWERS, Math.max(MIN_FLOWERS, desired));
 
-        // try to scatter flowers with smart spacing
+        // scatter flowers with spacing
         let tries = 0;
         while (flowers.length < target && tries < target * 10) {
           const x = rand(30, W - 30);
           const y = rand(reservedTop + 40, baseY - 40);
           const f = makeFlower(x, y);
-          // ensure spacing: if too close, try shifted positions a few times
           let accept = !isTooCloseToOthers(f, 0.9);
           let shiftTries = 0;
           while (!accept && shiftTries < 6) {
@@ -503,13 +618,11 @@
             accept = !isTooCloseToOthers(f, 0.9);
             shiftTries++;
           }
-          if (accept || Math.random() < 0.04) {
-            flowers.push(f);
-          }
+          if (accept || Math.random() < 0.04) flowers.push(f);
           tries++;
         }
 
-        // add a few larger focal flowers so the field looks varied
+        // a few larger focal flowers
         for (let i = 0; i < Math.min(8, Math.round(W/160)); i++) {
           const x = rand(60, W - 60);
           const y = rand(baseY - 160, baseY - 40);
@@ -519,17 +632,20 @@
           big.petalCount = randInt(5, 9);
           big.color = ['#ff6fa8', '#b784ff', '#ff9e80'][randInt(0,2)];
           big.createdAt = performance.now() - rand(0, 1200);
-          // ensure it doesn't overlap badly
           if (!isTooCloseToOthers(big, 0.9)) flowers.push(big);
         }
 
-        // seed butterflies
-        butterflies = [];
+        // butterflies
         const bfCount = Math.max(3, Math.round(W / 240));
         for (let i = 0; i < bfCount; i++) butterflies.push(makeButterfly());
+
+        // critters: spawn a mix of cats/dogs/bunnies in lanes along bottom
+        const crCount = Math.max(3, Math.round(W / 240));
+        for (let i = 0; i < crCount; i++) {
+          critters.push(makeCritter());
+        }
       }
 
-      // start
       init();
 
       // dev helper
