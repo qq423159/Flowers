@@ -8,236 +8,184 @@
 
 <style>
 
-body{
+html,body{
     margin:0;
+    width:100%;
+    height:100%;
     overflow:hidden;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    background:linear-gradient(to top,#ffe4ef,#fff9fc);
+    background:linear-gradient(#b8e8ff,#ffe8f5);
     font-family:Georgia,serif;
 }
 
-.container{
+canvas{
+    display:block;
+}
+
+.message{
+    position:absolute;
+    top:40px;
+    width:100%;
     text-align:center;
-}
-
-h1{
     color:#d63384;
-    margin-bottom:10px;
-    opacity:0;
-    animation:fadeIn 2s forwards;
+    text-shadow:0 0 10px white;
 }
 
-p{
-    color:#7d4b61;
-    opacity:0;
-    animation:fadeIn 2s forwards;
-    animation-delay:1s;
+.message h1{
+    margin:0;
+    font-size:clamp(2rem,5vw,3.5rem);
 }
 
-svg{
-    width:260px;
-    margin-top:20px;
-}
-
-.stem{
-    stroke:#3d9c4a;
-    stroke-width:8;
-    stroke-linecap:round;
-
-    stroke-dasharray:220;
-    stroke-dashoffset:220;
-
-    animation:growStem 2s ease forwards;
-}
-
-.leaf{
-    fill:#56b95f;
-
-    transform-origin:center;
-
-    transform:scale(0);
-
-    animation:bloomLeaf .8s forwards;
-
-    animation-delay:1.8s;
-}
-
-.petal{
-
-    fill:#ff77aa;
-
-    transform-origin:150px 70px;
-
-    transform:scale(0);
-
-    animation:bloomFlower .8s forwards;
-
-    animation-delay:2.4s;
-
-}
-
-.center{
-
-    fill:#ffd54f;
-
-    transform-origin:150px 70px;
-
-    transform:scale(0);
-
-    animation:bloomFlower .6s forwards;
-
-    animation-delay:2.8s;
-
-}
-
-@keyframes growStem{
-
-    to{
-
-        stroke-dashoffset:0;
-
-    }
-
-}
-
-@keyframes bloomFlower{
-
-    0%{
-
-        transform:scale(0);
-
-    }
-
-    70%{
-
-        transform:scale(1.15);
-
-    }
-
-    100%{
-
-        transform:scale(1);
-
-    }
-
-}
-
-@keyframes bloomLeaf{
-
-    from{
-
-        transform:scale(0);
-
-    }
-
-    to{
-
-        transform:scale(1);
-
-    }
-
-}
-
-@keyframes fadeIn{
-
-    to{
-
-        opacity:1;
-
-    }
-
+.message p{
+    margin-top:10px;
+    font-size:clamp(1rem,2.5vw,1.4rem);
 }
 
 </style>
-
 </head>
 
 <body>
 
-<div class="container">
-
+<div class="message">
 <h1>🌸 Happy National Girlfriend's Day 🌸</h1>
-
 <p>For the most beautiful flower in my life ❤️</p>
-
-<svg viewBox="0 0 300 400">
-
-<!-- Stem -->
-
-<line class="stem"
-      x1="150"
-      y1="360"
-      x2="150"
-      y2="90"/>
-
-<!-- Leaves -->
-
-<ellipse class="leaf"
-         cx="125"
-         cy="220"
-         rx="25"
-         ry="12"
-         transform="rotate(-30 125 220)"/>
-
-<ellipse class="leaf"
-         cx="175"
-         cy="180"
-         rx="25"
-         ry="12"
-         transform="rotate(30 175 180)"/>
-
-<!-- Petals -->
-
-<ellipse class="petal" cx="150" cy="45" rx="18" ry="42"/>
-
-<ellipse class="petal"
-         cx="150"
-         cy="45"
-         rx="18"
-         ry="42"
-         transform="rotate(60 150 70)"/>
-
-<ellipse class="petal"
-         cx="150"
-         cy="45"
-         rx="18"
-         ry="42"
-         transform="rotate(120 150 70)"/>
-
-<ellipse class="petal"
-         cx="150"
-         cy="45"
-         rx="18"
-         ry="42"
-         transform="rotate(180 150 70)"/>
-
-<ellipse class="petal"
-         cx="150"
-         cy="45"
-         rx="18"
-         ry="42"
-         transform="rotate(240 150 70)"/>
-
-<ellipse class="petal"
-         cx="150"
-         cy="45"
-         rx="18"
-         ry="42"
-         transform="rotate(300 150 70)"/>
-
-<!-- Flower Center -->
-
-<circle class="center"
-        cx="150"
-        cy="70"
-        r="18"/>
-
-</svg>
-
 </div>
+
+<canvas id="c"></canvas>
+
+<script>
+
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+}
+
+window.onresize=resize;
+resize();
+
+const flowers=[];
+
+function makeFlower(){
+
+    flowers.push({
+
+        x:Math.random()*canvas.width,
+
+        y:canvas.height-20-Math.random()*220,
+
+        stem:0,
+
+        target:50+Math.random()*80,
+
+        petals:0,
+
+        color:[
+            "#ff6fa8",
+            "#ffb347",
+            "#ffd93d",
+            "#b784ff",
+            "#ff5c8a",
+            "#ff8fab"
+        ][Math.floor(Math.random()*6)]
+
+    });
+
+}
+
+for(let i=0;i<80;i++){
+
+    setTimeout(makeFlower,i*120);
+
+}
+
+function drawFlower(f){
+
+    // stem
+
+    ctx.strokeStyle="#3fa34d";
+    ctx.lineWidth=4;
+
+    ctx.beginPath();
+
+    ctx.moveTo(f.x,canvas.height);
+
+    ctx.lineTo(f.x,canvas.height-f.stem);
+
+    ctx.stroke();
+
+    if(f.stem<f.target){
+
+        f.stem+=2;
+
+        return;
+
+    }
+
+    if(f.petals<1){
+
+        f.petals+=0.03;
+
+    }
+
+    const cy=canvas.height-f.target;
+
+    // petals
+
+    ctx.fillStyle=f.color;
+
+    for(let i=0;i<8;i++){
+
+        ctx.save();
+
+        ctx.translate(f.x,cy);
+
+        ctx.rotate(i*Math.PI/4);
+
+        ctx.scale(f.petals,f.petals);
+
+        ctx.beginPath();
+
+        ctx.ellipse(0,-12,8,18,0,0,Math.PI*2);
+
+        ctx.fill();
+
+        ctx.restore();
+
+    }
+
+    // center
+
+    ctx.beginPath();
+
+    ctx.fillStyle="#ffd54f";
+
+    ctx.arc(f.x,cy,7*f.petals,0,Math.PI*2);
+
+    ctx.fill();
+
+}
+
+function animate(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // grass
+
+    ctx.fillStyle="#8fd67a";
+
+    ctx.fillRect(0,canvas.height-70,canvas.width,70);
+
+    flowers.forEach(drawFlower);
+
+    requestAnimationFrame(animate);
+
+}
+
+animate();
+
+</script>
 
 </body>
 </html>
