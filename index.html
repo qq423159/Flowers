@@ -11,7 +11,34 @@
       --bg2: #ffe8f5;
       --title-color:#d63384;
     }
+  #music-btn{
+    position:fixed;
+    bottom:20px;
+    left:20px;
 
+    padding:12px 22px;
+
+    border:none;
+    border-radius:40px;
+
+    background:#ff69b4;
+    color:white;
+
+    font-size:16px;
+    font-weight:bold;
+
+    cursor:pointer;
+
+    z-index:9999;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.25);
+
+    transition:.25s;
+}
+
+#music-btn:hover{
+    transform:scale(1.05);
+}
     html,body{
       margin:0;
       height:100%;
@@ -90,105 +117,54 @@
     <p>For the most beautiful flower in my life ❤️</p>
   </div>
 <!-- Audio player (drop into your existing index.html) -->
-<audio id="bg-audio" preload="metadata" loop playsinline autoplay controls loading="lazy">
-  <!-- replace the src below with your file URL or path -->
-  <source src="song.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
+<audio id="bg-audio" loop playsinline>
+    <source src="song.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
 </audio>
 
+<button id="music-btn">🎵 Play Music</button>
+
 <script>
-(function(){
-  const audio = document.getElementById('bg-audio');
-  const toggle = document.getElementById('audio-toggle');
-  const icon = document.getElementById('audio-icon');
-  const muteBtn = document.getElementById('audio-mute');
-  const vol = document.getElementById('audio-volume');
+const audio = document.getElementById("bg-audio");
+const button = document.getElementById("music-btn");
 
-  // Respect prefers-reduced-motion: do not autoplay
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Set volume
+audio.volume = 0.8;
 
-  // ensure playsinline for mobile browsers
-  audio.playsInline = true;
-  audio.loop = true;
-  audio.autoplay = true;
+// Try autoplay
+window.addEventListener("load", () => {
 
+    audio.play().then(() => {
 
-  // UI updater
-  function updateUI(playing){
-    icon.innerHTML = '';
-    if (playing) {
-      // pause icon
-      icon.insertAdjacentHTML('beforeend','<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="#d63384"/>');
-      toggle.setAttribute('aria-label','Pause music');
-      toggle.title = 'Pause';
-    } else {
-      // play icon
-      icon.insertAdjacentHTML('beforeend','<path d="M6 4v16l14-8L6 4z" fill="#d63384"></path>');
-      toggle.setAttribute('aria-label','Play music');
-      toggle.title = 'Play';
+        button.textContent = "⏸ Pause Music";
+
+    }).catch(() => {
+
+        // Browser blocked autoplay
+        button.textContent = "🎵 Play Music";
+
+    });
+
+});
+
+// Play / Pause
+button.addEventListener("click", () => {
+
+    if(audio.paused){
+
+        audio.play();
+
+        button.textContent = "⏸ Pause Music";
+
+    }else{
+
+        audio.pause();
+
+        button.textContent = "🎵 Play Music";
+
     }
-  }
 
-  
-
-  // restore play state if user previously chose to play
-  try {
-    const wasPlaying = localStorage.getItem('flowers_music_playing') === '1';
-    if (wasPlaying && !reducedMotion) {
-      // try to resume (note: may still be blocked)
-      audio.play().then(()=> updateUI(true)).catch(()=> updateUI(false));
-    } else {
-      updateUI(false);
-    }
-  } catch(e){ updateUI(false); }
-
-  // toggle play/pause (user gesture)
-  toggle.addEventListener('click', async () => {
-    if (audio.paused) {
-      try {
-        await audio.play();
-        updateUI(true);
-        try { localStorage.setItem('flowers_music_playing','1'); } catch(e){}
-      } catch (e) {
-        console.warn('Playback failed', e);
-        updateUI(false);
-      }
-    } else {
-      audio.pause();
-      updateUI(false);
-      try { localStorage.setItem('flowers_music_playing','0'); } catch(e){}
-    }
-  });
-
-  // mute toggle
-  muteBtn.addEventListener('click', () => {
-    audio.muted = !audio.muted;
-    muteBtn.style.opacity = audio.muted ? '0.6' : '1';
-  });
-
-  // volume slider
-  vol.addEventListener('input', (e) => {
-    audio.volume = parseFloat(e.target.value);
-    audio.muted = audio.volume === 0;
-  });
-
-  // Keyboard accessibility: Space or Enter on focused toggle button
-  toggle.addEventListener('keydown', (ev) => {
-    if (ev.key === ' ' || ev.key === 'Enter') { ev.preventDefault(); toggle.click(); }
-  });
-
-  // Pause audio when page hidden (save resources)
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      if (!audio.paused) { audio.pause(); updateUI(false); }
-    } else {
-      try {
-        if (localStorage.getItem('flowers_music_playing') === '1' && !reducedMotion) {
-          audio.play().then(()=>updateUI(true)).catch(()=>updateUI(false));
-        }
-      } catch(e){}
-    }
-  });
+});
 
   // expose for debugging
   window.__flowersAudio = audio;
